@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Flight Report</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --card: #1a1d24;
+      --border: #2a2f3a;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #4f8cff;
+      --accent-hover: #3a7aef;
+      --success: #34c759;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+      line-height: 1.4;
+    }
+    .container { max-width: 480px; margin: 0 auto; }
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .card-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .row:last-child { margin-bottom: 0; }
+    .field { flex: 1; min-width: 0; }
+    label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    input, select, textarea {
+      width: 100%;
+      background: #12151b;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 11px 12px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%239aa0a6' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+    .ix-only { display: none; }
+    .ix-only.show { display: block; }
+    .non-ix-only { display: block; }
+    .non-ix-only.hide { display: none; }
+    .btn {
+      display: block;
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 15px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      margin-top: 6px;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+      margin-top: 10px;
+    }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      margin-top: 8px;
+    }
+    #reportBox {
+      display: none;
+      margin-top: 16px;
+    }
+    #reportBox.show { display: block; }
+    #reportText {
+      width: 100%;
+      min-height: 280px;
+      background: #0c0e12;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: #d0d4db;
+      padding: 14px;
+      font-family: "SF Mono", "Menlo", "Consolas", monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      resize: vertical;
+    }
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--success);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      background: #12151b;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.12s;
+    }
+    .chip.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    #nameModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    #nameModal.show { display: flex; }
+    .name-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+    }
+    .name-box h2 {
+      font-size: 1.15rem;
+      margin-bottom: 6px;
+    }
+    .name-box p {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+    }
+    .name-box input {
+      margin-bottom: 14px;
+      text-align: center;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="nameModal">
+    <div class="name-box">
+      <h2>What's your name?</h2>
+      <p>This will be used as FSL Staff in every report.<br>Asked only once.</p>
+      <input type="text" id="nameInput" placeholder="e.g. ASWIN M" autocomplete="name" autocapitalize="characters" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()" />
+      <button class="btn btn-primary" onclick="saveName()">Save</button>
+    </div>
+  </div>
+  <div class="container">
+    <h1>✈️ Flight Report</h1>
+    <p class="subtitle" id="subtitle">FSL</p>
+
+    <!-- BASIC INFO -->
+    <div class="card">
+      <div class="card-title">Flight Info</div>
+      <div class="row">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="date" />
+        </div>
+        <div class="field">
+          <label>Airline</label>
+          <select id="airline">
+            <option value="">Select</option>
+            <option value="IX">IX</option>
+            <option value="AK">AK</option>
+            <option value="FD">FD</option>
+            <option value="UL">UL</option>
+            <option value="J9">J9</option>
+            <option value="FZ">FZ</option>
+            <option value="WY">WY</option>
+            <option value="EY">EY</option>
+            <option value="3L">3L</option>
+            <option value="G9">G9</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Flight Number</label>
+          <input type="number" id="flightNo" placeholder="e.g. 2115" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label>Reg Suffix</label>
+          <input type="text" id="regSuffix" placeholder="e.g. AXX" autocomplete="off" autocapitalize="characters" />
+          <div class="hint" id="regHint">Prefix will be added automatically</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Sector</label>
+          <input type="text" id="sector" placeholder="Auto-filled" autocomplete="off" />
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMES -->
+    <div class="card">
+      <div class="card-title">Times</div>
+      <div class="row">
+        <div class="field">
+          <label>C/on</label>
+          <input type="time" id="con" />
+        </div>
+        <div class="field">
+          <label>C/off</label>
+          <input type="time" id="coff" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>First Pax In</label>
+          <input type="time" id="firstPax" />
+        </div>
+        <div class="field">
+          <label>Last Pax In</label>
+          <input type="time" id="lastPax" />
+        </div>
+      </div>
+    </div>
+
+    <!-- PAX & BAGS -->
+    <div class="card">
+      <div class="card-title">Pax & Bags</div>
+      <div class="row">
+        <div class="field">
+          <label>Total Pax</label>
+          <input type="number" id="totalPax" placeholder="0" inputmode="numeric" />
+        </div>
+        <div class="field">
+          <label>Infants</label>
+          <input type="number" id="totalInf" value="0" inputmode="numeric" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>BMA Tallied</label>
+          <select id="bma">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+            <option value="NIL">NIL</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Departure VAL</label>
+          <select id="depVal">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+            <option value="NIL">NIL</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- IX ONLY -->
+    <div class="card ix-only" id="ixSection">
+      <div class="card-title">IX Specific</div>
+      <div class="row">
+        <div class="field">
+          <label>Arrival VAL</label>
+          <select id="arrVal">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+            <option value="NIL" selected>NIL</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Crew Reconciliation</label>
+          <select id="crew">
+            <option value="Done">Done</option>
+            <option value="O/B">O/B</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label>PRS Used (tap to select)</label>
+        <div class="chip-row" id="prsChips">
+          <div class="chip" data-val="1">1</div>
+          <div class="chip" data-val="2">2</div>
+          <div class="chip" data-val="3">3</div>
+          <div class="chip" data-val="4">4</div>
+          <div class="chip" data-val="5">5</div>
+          <div class="chip" data-val="6">6</div>
+          <div class="chip" data-val="7">7</div>
+          <div class="chip" data-val="8">8</div>
+          <div class="chip" data-val="No / Manual">No / Manual</div>
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <label>AER Type (tap to select)</label>
+        <div class="chip-row" id="aerTypeChips">
+          <div class="chip" data-val="DOM">DOM</div>
+          <div class="chip" data-val="INTL">INTL</div>
+        </div>
+      </div>
+      <div style="margin-bottom:4px">
+        <label>AER No (tap to select)</label>
+        <div class="chip-row" id="aerChips">
+          <div class="chip" data-val="1">1</div>
+          <div class="chip" data-val="2">2</div>
+          <div class="chip" data-val="3">3</div>
+          <div class="chip" data-val="4">4</div>
+          <div class="chip" data-val="5">5</div>
+          <div class="chip" data-val="6">6</div>
+          <div class="chip" data-val="7">7</div>
+          <div class="chip" data-val="8">8</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NON-IX ONLY -->
+    <div class="card non-ix-only" id="nonIxSection">
+      <div class="card-title">Other Airlines</div>
+      <div class="row">
+        <div class="field">
+          <label>SRF Signed</label>
+          <select id="srf">
+            <option value="Signed & Filed">Signed & Filed</option>
+            <option value="Not Signed">Not Signed</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTES -->
+    <div class="card">
+      <div class="card-title">Notes</div>
+      <div class="row">
+        <div class="field">
+          <label>Delay Reason</label>
+          <input type="text" id="delay" value="NA" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Lost & Found</label>
+          <input type="text" id="lost" value="NIL" />
+        </div>
+      </div>
+      <div class="row ix-only" id="issuesRow">
+        <div class="field">
+          <label>Any Other Issues</label>
+          <input type="text" id="issues" value="NIL" />
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="generate()">Generate Report</button>
+
+    <!-- REPORT OUTPUT -->
+    <div id="reportBox">
+      <div class="card" style="margin-top:16px">
+        <div class="card-title">Report (ready to copy)</div>
+        <textarea id="reportText" readonly></textarea>
+        <button class="btn btn-success" onclick="copyAndOpen()">Copy & Open WhatsApp</button>
+        <button class="btn btn-secondary" onclick="copyOnly()">Copy Only</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied!</div>
+
+  <script>
+    // ========== DATA (matching your latest shortcut) ==========
+    const REG_PREFIX = {
+      IX: "VT-", AK: "9M-", FD: "HS-", UL: "4R-", J9: "9K-",
+      FZ: "A6-", WY: "A4O-", EY: "A6-", G9: "A6-", "3L": "A6-"
+    };
+    const SECTOR_MAP = {
+      IX: "COK ✈︎ ",
+      AK: "KUL ✈︎ COK ✈︎ KUL",
+      FD: "DMK ✈︎ COK ✈︎ DMK",
+      UL: "CMB ✈︎ COK ✈︎ CMB",
+      J9: "KWI ✈︎ COK ✈︎ KWI",
+      FZ: "DXB ✈︎ COK ✈︎ DXB",
+      WY: "MCT ✈︎ COK ✈︎ MCT",
+      EY: "AUH ✈︎ COK ✈︎ AUH",
+      G9: "SHJ ✈︎ COK ✈︎ SHJ",
+      "3L": "AUH ✈︎ COK ✈︎ AUH"
+    };
+
+    // ========== NAME (first time only) ==========
+    let staffName = localStorage.getItem("fslStaffName") || "";
+
+    function checkName() {
+      if (!staffName) {
+        document.getElementById("nameModal").classList.add("show");
+        setTimeout(() => document.getElementById("nameInput").focus(), 200);
+      } else {
+        document.getElementById("subtitle").textContent = "FSL · " + staffName;
+      }
+    }
+
+    function saveName() {
+      const val = document.getElementById("nameInput").value.trim().toUpperCase();
+      if (!val) {
+        alert("Please enter your name");
+        return;
+      }
+      staffName = val;
+      localStorage.setItem("fslStaffName", staffName);
+      document.getElementById("nameModal").classList.remove("show");
+      document.getElementById("subtitle").textContent = "FSL · " + staffName;
+    }
+
+    // Allow Enter key to save
+    document.addEventListener("DOMContentLoaded", () => {
+      const input = document.getElementById("nameInput");
+      if (input) {
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") saveName();
+        });
+      }
+      checkName();
+    });
+
+    // ========== INIT ==========
+    const today = new Date();
+    document.getElementById("date").value = today.toISOString().slice(0, 10);
+
+    const now = today.toTimeString().slice(0, 5);
+    ["con", "coff", "firstPax", "lastPax"].forEach(id => {
+      document.getElementById(id).value = now;
+    });
+
+    // ========== AIRLINE CHANGE ==========
+    document.getElementById("airline").addEventListener("change", function () {
+      const al = this.value;
+      const isIX = al === "IX";
+
+      document.getElementById("ixSection").classList.toggle("show", isIX);
+      document.getElementById("issuesRow").classList.toggle("show", isIX);
+      document.getElementById("nonIxSection").classList.toggle("hide", isIX);
+
+      document.getElementById("regHint").textContent = al
+        ? "Prefix: " + (REG_PREFIX[al] || "") + "  (suffix only)"
+        : "Prefix will be added automatically";
+
+      const sectorInput = document.getElementById("sector");
+      if (al && SECTOR_MAP[al]) {
+        sectorInput.value = SECTOR_MAP[al];
+      } else {
+        sectorInput.value = "";
+      }
+
+      sectorInput.readOnly = al && al !== "IX";
+    });
+
+    // ========== PRS CHIPS ==========
+    document.querySelectorAll("#prsChips .chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        if (chip.dataset.val === "No / Manual") {
+          document.querySelectorAll("#prsChips .chip").forEach(c => c.classList.remove("selected"));
+          chip.classList.add("selected");
+        } else {
+          const manual = document.querySelector('#prsChips .chip[data-val="No / Manual"]');
+          if (manual) manual.classList.remove("selected");
+          chip.classList.toggle("selected");
+        }
+      });
+    });
+
+    // ========== AER TYPE CHIPS (single select) ==========
+    document.querySelectorAll("#aerTypeChips .chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll("#aerTypeChips .chip").forEach(c => c.classList.remove("selected"));
+        chip.classList.add("selected");
+      });
+    });
+
+    // ========== AER NO CHIPS (multi select) ==========
+    document.querySelectorAll("#aerChips .chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        chip.classList.toggle("selected");
+      });
+    });
+
+    // ========== HELPERS ==========
+    function fmtDate(iso) {
+      if (!iso) return "";
+      const parts = iso.split("-");
+      return parts[2] + "/" + parts[1] + "/" + parts[0].slice(2);
+    }
+    function fmtTime(t) {
+      return t || "00:00";
+    }
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg || "Copied!";
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 1800);
+    }
+
+    // ========== GENERATE ==========
+    function generate() {
+      const al = document.getElementById("airline").value;
+      if (!al) {
+        alert("Please select Airline");
+        return;
+      }
+
+      const date = fmtDate(document.getElementById("date").value);
+      const flightNo = document.getElementById("flightNo").value || "";
+      const regSuffix = (document.getElementById("regSuffix").value || "").toUpperCase().trim();
+      const reg = ((REG_PREFIX[al] || "") + regSuffix).toUpperCase();
+      const sector = (document.getElementById("sector").value || "").toUpperCase().trim();
+
+      const con = fmtTime(document.getElementById("con").value);
+      const coff = fmtTime(document.getElementById("coff").value);
+      const firstPax = fmtTime(document.getElementById("firstPax").value);
+      const lastPax = fmtTime(document.getElementById("lastPax").value);
+
+      const totalPax = document.getElementById("totalPax").value || "0";
+      const totalInf = document.getElementById("totalInf").value || "0";
+      const bma = document.getElementById("bma").value;
+      const depVal = document.getElementById("depVal").value;
+
+      const delay = document.getElementById("delay").value.trim() || "NA";
+      const lost = document.getElementById("lost").value.trim() || "NIL";
+      const issues = document.getElementById("issues").value.trim() || "NIL";
+
+      let report = "";
+
+      if (al === "IX") {
+        const arrVal = document.getElementById("arrVal").value;
+        const crew = document.getElementById("crew").value;
+        const selectedPrs = Array.from(document.querySelectorAll("#prsChips .chip.selected"))
+          .map(c => c.dataset.val);
+        const prs = selectedPrs.length ? selectedPrs.join(", ") : "NIL";
+        const selectedAerType = document.querySelector("#aerTypeChips .chip.selected");
+        const aerType = selectedAerType ? selectedAerType.dataset.val : "DOM";
+        const selectedAer = Array.from(document.querySelectorAll("#aerChips .chip.selected"))
+          .map(c => c.dataset.val);
+        const aerNo = selectedAer.length ? selectedAer.join(", ") : "NIL";
+
+        report = "```Date```: *" + date + "*\n" +
+          "```Flight Number``` : *" + al + flightNo + "*\n" +
+          "```Sector```: *" + sector + "*\n" +
+          "```Reg``` : *" + reg + "*\n" +
+          "```C/on ```: *" + con + "*\n" +
+          "```C/off ```: *" + coff + "*\n\n" +
+          "```First Pax``` : " + firstPax + "\n" +
+          "```Last Pax``` : " + lastPax + "\n\n" +
+          "```Total pax```- *" + totalPax + " +" + totalInf + "*\n" +
+          "```Bags Tallied```- *" + bma + "*\n\n" +
+          "```Dep VAL```: *" + depVal + "*\n" +
+          "```Arr VAL ```: *" + arrVal + "*\n\n" +
+          "```PRS Used``` : *" + prs + "*\n" +
+          "```Crew Reconciliation``` : " + crew + "\n\n" +
+          "```AER No ```: *" + aerType + ", " + aerNo + "*\n\n" +
+          "```Delay Reason``` : " + delay + "\n" +
+          "```Lost & Found ```: *" + lost + "*\n" +
+          "```Any Other Issues ``` :" + issues + "\n\n\n" +
+          "```FSL Staff``` : _*" + staffName + "*_";
+      } else {
+        const srf = document.getElementById("srf").value;
+
+        report = "```Date ``` : *" + date + "*\n" +
+          "```Flight Number ``` : *" + al + flightNo + "*\n" +
+          "```Sector ```: *" + sector + "*\n" +
+          "```Reg ```: *" + reg + "*\n" +
+          "```C/on ```: *" + con + "*\n" +
+          "```C/off ```:  *" + coff + "*\n\n" +
+          "```Total Pax```  :*" + totalPax + " + " + totalInf + "*\n" +
+          "```Depature VAL``` : *" + depVal + "*\n\n" +
+          "```Bags Tallied ```: *" + bma + "*\n\n" +
+          "```Delay Reason ```: " + delay + "\n" +
+          "```Lost & Found ``` : *" + lost + "*\n" +
+          "```SRF Signed ``` : *" + srf + "*\n\n\n" +
+          "```FSL STAFF```: _*" + staffName + "*_";
+      }
+
+      document.getElementById("reportText").value = report;
+      document.getElementById("reportBox").classList.add("show");
+      document.getElementById("reportBox").scrollIntoView({ behavior: "smooth" });
+    }
+
+    // ========== COPY ==========
+    function copyOnly() {
+      const text = document.getElementById("reportText").value;
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function() {
+        showToast("Copied!");
+      }).catch(function() {
+        const ta = document.getElementById("reportText");
+        ta.select();
+        document.execCommand("copy");
+        showToast("Copied!");
+      });
+    }
+
+    function copyAndOpen() {
+      copyOnly();
+      setTimeout(function() {
+        window.open("https://chat.whatsapp.com/F8VKJhbBTUN3ky2u7T5jrb", "_blank");
+      }, 300);
+    }
+  </script>
+</body>
+</html>
